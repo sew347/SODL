@@ -1,0 +1,94 @@
+import numpy as np
+import numpy.linalg as la
+import argparse
+import pandas as pd
+import os
+import pdb
+
+
+def proj_mat(A):
+    return np.dot(A, np.transpose(A))
+
+def single_subspace_intersection(Si, Sj, tau=0.5):
+    Pj = proj_mat(Sj)
+    P_itoj = Si - Pj @ Si
+    SVD = la.svd(P_itoj)
+    sing_vals = SVD[1]
+    if (sing_vals[-1] < tau) and (sing_vals[-2] >= tau):
+        return (Si @ SVD[2][-1],True)
+    else:
+        return (0,False)
+    
+
+def is_new(D_list, dhat, eta):
+    is_new = True
+    for d in D_list:
+        if np.abs(np.inner(d,dhat)) > eta:
+            is_new = False
+            break
+    return is_new
+
+
+def subspace_intersection(subspaces, tau=0.5, eta=0.5):
+    D_list = []
+    intersection_list = []
+    n = len(subspaces)
+    for i in range(n):
+        Si = subspaces[i]
+        for j in range(i+1,n):
+            Sj = subspaces[j]
+            dhat, has_int = single_subspace_intersection(Si, Sj)
+            if has_int:
+                intersection = [i,j,-1, tau, eta]
+                if is_new(D_list, dhat, eta):
+                    intersection[2] = len(D_list)
+                    intersection_list.append(intersection)
+                    D_list.append(dhat)
+    if len(D_list) == 0:
+        return False, False, False
+    else:
+        M = np.shape(D_list[0])[0]
+        D = np.zeros((M, len(D_list)))
+        for (i,d) in enumerate(D_list):
+            D[:,i] = d
+    intersection_data = pd.DataFrame(intersection_list, columns = ['idx1','idx2','col', 'tau', 'eta'])
+    return D, intersection_data, True
+
+
+def load_subspaces(subspace_folder):
+    subspaces = []
+    n_files = len(os.listdir(subspace_folder))
+    for i in range(n_files):
+        subspace_path = subspace_folder + '/subspace_' + str(i) +'.npy'
+        if os.path.exists(subspace_path):
+            curr_subspace = np.load(subspace_path, allow_pickle=True)
+            subspaces.append(curr_subspace)
+    return subspaces
+    
+
+def subspace_intersection_from_files(subspace_folder, output_folder, tau=0.5, eta=0.5):
+    subspaces = load_subspaces(subspace_folder)
+    D, intersection_data, success = subspace_intersection(subspaces, tau=tau, eta=eta)
+    if success:
+        return D, intersection_data
+    else:
+        raise ValueError('Given subspace files contained no empirical intersections with given tau.')
+    
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="This script takes in a collection of sample vectors and returns a collection of estimated spanning subspaces.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--subspace_folder', help='Location of input subspaces', required=True)
+    parser.add_argument('--tau', type=float, help='Intersection threshold', required=False, default=0.5)
+    parser.add_argument('--eta', type=float, help='Column similarity threshold', required=False, default=0.5)    
+    parser.add_argument('--output_folder', help='Folder for saving output', required=True)
+    args = parser.parse_args()
+    
+    outpath = args.output_folder
+    if not os.path.exists(outpath):
+       os.makedirs(outpath)
+    
+    est_D, int_data = subspace_intersection_from_files(args.subspace_folder, args.output_folder, tau = args.tau, eta = args.eta)
+    np.save(outpath + '/est_D.npy', est_D)
+    int_data.to_csv(outpath + '/intersection_data.csv')
