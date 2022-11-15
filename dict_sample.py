@@ -35,7 +35,7 @@ import numpy.linalg as la
 ######################################################
 
 class dict_sample:
-    def __init__(self, M, s, K, N, D = None, testmode = False, epsi = 0, lowmem = False, full_corr = False, thresh = 1/2, fixed_supp = [], n_subspaces = -1):
+    def __init__(self, M, s, K, N, D = None, testmode = False, epsi = 0, full_corr = False, thresh = 1/2, fixed_supp = [], n_subspaces = -1):
         self.M = M
         self.s = s
         self.K = K
@@ -44,10 +44,6 @@ class dict_sample:
         self.fixed_supp = fixed_supp
         self.n_subspaces = self.N if n_subspaces == -1 else n_subspaces
         self.thresh = thresh
-        self.lowmem = lowmem
-        if N > 10**6 and not self.lowmem:
-            warnings.warn("N is greater than 10^6 but lowmem mode not set. Setting lowmem automatically.")
-            self.lowmem = True
         start = time.time()
         if D is not None:
             self.D = D
@@ -146,7 +142,7 @@ if __name__ == "__main__":
     parser.add_argument('--K', type=int, help='Size of dictionary', required = False)
     parser.add_argument('--N', type=int, help='Number of samples', required = False)
     parser.add_argument('--seed', type=int, help='Random seed', required = False)
-    parser.add_argument('--fixed_supp', type=int, nargs='+', help='fixed support', required=True)
+    parser.add_argument('--fixed_supp', type=int, nargs='+', help='fixed support', required=False, default = [])
     parser.add_argument('--output_folder', help='Folder for saving output', required = True)
     args = parser.parse_args()
 

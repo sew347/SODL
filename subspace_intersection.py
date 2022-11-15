@@ -3,7 +3,6 @@ import numpy.linalg as la
 import argparse
 import pandas as pd
 import os
-import pdb
 
 
 def proj_mat(A):
@@ -29,21 +28,32 @@ def is_new(D_list, dhat, eta):
     return is_new
 
 
-def subspace_intersection(subspaces, tau=0.5, eta=0.5):
+def subspace_intersection(subspaces, tau=0.5, eta=0.5, J=None):
     D_list = []
     intersection_list = []
-    n = len(subspaces)
-    for i in range(n):
+    if not J:
+        J = len(subspaces)
+
+    s = np.shape(subspaces[0])[1]
+    s_remaining = [s]*J
+        
+    for i in range(J):
+        print(i)
         Si = subspaces[i]
-        for j in range(i+1,n):
-            Sj = subspaces[j]
-            dhat, has_int = single_subspace_intersection(Si, Sj)
-            if has_int:
-                intersection = [i,j,-1, tau, eta]
-                if is_new(D_list, dhat, eta):
-                    intersection[2] = len(D_list)
-                    intersection_list.append(intersection)
-                    D_list.append(dhat)
+        if s_remaining[i] > 0:
+            for j in range(i+1,J):
+                Sj = subspaces[j]
+                dhat, has_int = single_subspace_intersection(Si, Sj)
+                if has_int:
+                    intersection = [i,j,-1, tau, eta]
+                    if is_new(D_list, dhat, eta):
+                        intersection[2] = len(D_list)
+                        intersection_list.append(intersection)
+                        D_list.append(dhat)
+                        s_remaining[i] -= 1
+                        s_remaining[j] -= 1
+                        if s_remaining[i] > 0:
+                            break
     if len(D_list) == 0:
         return False, False, False
     else:
@@ -55,10 +65,11 @@ def subspace_intersection(subspaces, tau=0.5, eta=0.5):
     return D, intersection_data, True
 
 
-def load_subspaces(subspace_folder):
+def load_subspaces(subspace_folder, J=None):
     subspaces = []
-    n_files = len(os.listdir(subspace_folder))
-    for i in range(n_files):
+    if not J:
+        J = len(os.listdir(subspace_folder))
+    for i in range(J):
         subspace_path = subspace_folder + '/subspace_' + str(i) +'.npy'
         if os.path.exists(subspace_path):
             curr_subspace = np.load(subspace_path, allow_pickle=True)
@@ -66,9 +77,9 @@ def load_subspaces(subspace_folder):
     return subspaces
     
 
-def subspace_intersection_from_files(subspace_folder, output_folder, tau=0.5, eta=0.5):
+def subspace_intersection_from_files(subspace_folder, output_folder, tau=0.5, eta=0.5, J=None):
     subspaces = load_subspaces(subspace_folder)
-    D, intersection_data, success = subspace_intersection(subspaces, tau=tau, eta=eta)
+    D, intersection_data, success = subspace_intersection(subspaces, tau=tau, eta=eta, J=J)
     if success:
         return D, intersection_data
     else:
@@ -81,7 +92,8 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--subspace_folder', help='Location of input subspaces', required=True)
     parser.add_argument('--tau', type=float, help='Intersection threshold', required=False, default=0.5)
-    parser.add_argument('--eta', type=float, help='Column similarity threshold', required=False, default=0.5)    
+    parser.add_argument('--eta', type=float, help='Column similarity threshold', required=False, default=0.5)
+    parser.add_argument('--J', type=int, help='Number of subspaces to consider.', required=False)
     parser.add_argument('--output_folder', help='Folder for saving output', required=True)
     args = parser.parse_args()
     
@@ -89,6 +101,6 @@ if __name__ == "__main__":
     if not os.path.exists(outpath):
        os.makedirs(outpath)
     
-    est_D, int_data = subspace_intersection_from_files(args.subspace_folder, args.output_folder, tau = args.tau, eta = args.eta)
+    est_D, int_data = subspace_intersection_from_files(args.subspace_folder, args.output_folder, tau = args.tau, eta = args.eta, J = args.J)
     np.save(outpath + '/est_D.npy', est_D)
     int_data.to_csv(outpath + '/intersection_data.csv')

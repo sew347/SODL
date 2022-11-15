@@ -12,9 +12,10 @@ def recover_subspace(i, s, Y, cov, corrs = None):
     cwc_proj = frobenius_projection(corr_weight_cov, cov)
     M = np.shape(cwc_proj)[0]
     E = np.linalg.eigh(cwc_proj)
+    # return E[1][:,-s:], E, corr_weight_cov, cwc_proj
     return E[1][:,-s:]
 
 
 def frobenius_projection(A, B):
     inner_prod = np.trace(A @ B)
-    return A - inner_prod*B
+    return A - (inner_prod*B)/(np.linalg.norm(B,'fro')**2)
