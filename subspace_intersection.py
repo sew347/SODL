@@ -6,9 +6,22 @@ import os
 
 
 def proj_mat(A):
+    """
+    Projection matrix for orthogonal basis matrix A
+    :param A: Orthogonal matrix with unit vector columns
+    :return: AA^T, projection matrix onto subspace spanned by cols of A
+    """
+    #todo: check if A is orthogonal?
     return np.dot(A, np.transpose(A))
 
 def single_subspace_intersection(Si, Sj, tau=0.5):
+    """
+    Performs approximate subspace intersection on subspaces Si, Sj
+    :param Si: Basis matrix for subspace
+    :param Sj: Basis matrix for subspace
+    :param tau: singular value threshold for intersection
+    :return: Vector of intersection and Boolean whether intersection was found
+    """
     Pj = proj_mat(Sj)
     P_itoj = Si - Pj @ Si
     SVD = la.svd(P_itoj)
@@ -20,6 +33,13 @@ def single_subspace_intersection(Si, Sj, tau=0.5):
     
 
 def is_new(D_list, dhat, eta):
+    """
+    Checks if dhat is similar to vector in D_list
+    :param D_list: List of unit vectors
+    :param dhat: unit vector
+    :param eta: Threshold for similarity
+    :return: Boolean whether |<d, dhat>|>eta for any d in D_list
+    """
     is_new = True
     for d in D_list:
         if np.abs(np.inner(d,dhat)) > eta:
@@ -29,6 +49,14 @@ def is_new(D_list, dhat, eta):
 
 
 def subspace_intersection(subspaces, tau=0.5, eta=0.5, J=None):
+    """
+    Performs approximate subspace intersection on all pairs of subspaces Si, Sj up to J
+    :param subspaces: list of bases of subspaces Si
+    :param tau: singular value threshold for intersection
+    :param eta: threshold for similarity
+    :param J: number of subspaces to scan
+    :return: Dictionary, intersection metadata, success indicator
+    """
     D_list = []
     intersection_list = []
     if not J:
@@ -78,6 +106,15 @@ def load_subspaces(subspace_folder, J=None):
     
 
 def subspace_intersection_from_files(subspace_folder, output_folder, tau=0.5, eta=0.5, J=None):
+    """
+    Performs approximate subspace intersection on all pairs of subspaces Si, Sj up to J from given directory
+    :param subspace_folder: Location of saved subspaces
+    :param output_folder: Location for output files
+    :param tau: singular value threshold for intersection
+    :param eta: threshold for similarity
+    :param J: number of subspaces to scan
+    :return: Dictionary, intersection metadata
+    """
     subspaces = load_subspaces(subspace_folder)
     D, intersection_data, success = subspace_intersection(subspaces, tau=tau, eta=eta, J=J)
     if success:

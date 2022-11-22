@@ -35,35 +35,24 @@ import numpy.linalg as la
 ######################################################
 
 class dict_sample:
-    def __init__(self, M, s, K, N, D = None, testmode = False, epsi = 0, full_corr = False, thresh = 1/2, fixed_supp = [], n_subspaces = -1):
+    def __init__(self, M, s, K, N, D = None, epsi = 0, fixed_supp = [], n_subspaces = -1):
         self.M = M
         self.s = s
         self.K = K
         self.N = N
-        self.testmode = testmode
         self.fixed_supp = fixed_supp
         self.n_subspaces = self.N if n_subspaces == -1 else n_subspaces
-        self.thresh = thresh
-        start = time.time()
-        if D is not None:
-            self.D = D
-        else:
-            self.D = self.build_D()
+        self.D = self.build_D()
         self.X = self.build_X()
         self.Y = self.build_Y()
         if epsi > 0:
             print('Test suite is running with noise.')
             self.Y = self.Y + np.random.normal(0,epsi*math.sqrt(s)/math.sqrt(M),(M,N))
-        else:
-            self.default_thresh = 1
         self.HSig_D = self.build_HSig_D()
-        if not self.lowmem:
-            if full_corr:
-                self.corr = np.abs(np.dot(np.transpose(self.Y),self.Y))
-            else:
-                self.corr = np.abs(np.dot(np.transpose(self.Y[:,:self.n_subspaces]),self.Y))
+        if full_corr:
+            self.corr = np.abs(np.dot(np.transpose(self.Y),self.Y))
         else:
-            self.uncorr_idx = self.get_corr_lowmem()
+            self.corr = np.abs(np.dot(np.transpose(self.Y[:,:self.n_subspaces]),self.Y))
 
     def build_D(self):
         D = np.random.normal(0,1,(self.M,self.K))
@@ -73,10 +62,7 @@ class dict_sample:
     def build_X(self):
         X = np.zeros((self.K,self.N))
         for i in range(self.N):
-            if i == 0 and self.testmode:
-                X[0:self.s,0] = np.ones(self.s)
-            else:
-                X[:,i] = self.get_Xcol(i)
+            X[:,i] = self.get_Xcol(i)
         return(X)
 
     def build_Y(self):
@@ -94,43 +80,9 @@ class dict_sample:
             Xcol[rows] = 1 - 2*np.random.binomial(1,0.5,self.s)
         return Xcol
 
-    #temporary for testing deviations from uniform
-    def get_Xcol_biased(self,i):
-        Xcol = np.zeros(self.K)
-        first_s = np.random.binomial(1,self.s/self.K,self.s)
-        if np.sum(first_s) > 0:
-            rows = list(np.nonzero(first_s)[0])
-            n_remain = self.s - len(rows)
-            inclusion_stat = self.bias_weight + np.abs(np.random.normal(0,1,self.K))
-            inclusion_stat[:self.s] = 0
-            largest = list(np.argpartition(inclusion_stat, -n_remain)[-n_remain:])
-            rows = rows + largest
-            Xcol[rows] = 1 - 2*np.random.binomial(1,0.5,self.s)
-        else:
-            rows = random.sample(range(self.s,self.K),self.s)
-            Xcol[rows] = 1 - 2*np.random.binomial(1,0.5,self.s)
-        return Xcol
-
     def build_HSig_D(self):
         HSig_D = np.dot(self.Y, np.transpose(self.Y))
         return HSig_D/np.linalg.norm(HSig_D)
-
-    def reload_DY(self):
-        self.D = self.build_D()
-        self.Y = np.dot(self.D,self.X)
-        if self.normflag:
-            self.Y = self.Y/np.linalg.norm(self.Y, axis = 0)
-
-    def get_corr_lowmem(self):
-        uncorr_idx = []
-        for i in range(self.N):
-            uncorr_idx.append(self.get_uncorr_i(i))
-        return(uncorr_idx)
-
-    def get_uncorr_i(self, i):
-        inners_i = np.dot(np.transpose(self.Y[:,i]),self.Y)
-        uncorr_i = np.nonzero(np.abs(inners_i) < self.thresh)[0]
-        return uncorr_i
     
 
 if __name__ == "__main__":

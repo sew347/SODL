@@ -3,7 +3,16 @@ import argparse
 import os
 import single_subspace_recovery as ssr
 
+
 def recover_subspaces(Y, s, J = None, output_folder = None):
+    """
+    Recovers bases for the spanning subspaces from sample matrix Y.
+    :param Y: Data matrix with samples as columns
+    :param s: Expected sparsity
+    :param J: Number of subspaces to recover. If not set, all will be recovered.
+    :param output_folder: If set, subspaces will be saved in this location
+    :return: List of recovered subspaces
+    """
     if J is None:
         J = np.shape(Y)[1]
     N = np.shape(Y)[1]
@@ -18,11 +27,24 @@ def recover_subspaces(Y, s, J = None, output_folder = None):
 
 
 def recover_subspaces_from_file(sample_file, s, J = None, output_folder = None):
+    """
+    Wrapper for recover_subspaces to be called from file for samples.
+    :param sample_file: location of file in .npy format containing matrix with samples as columns
+    :param s: Expected sparsity
+    :param J: Number of subspaces to recover. If not set, all will be recovered.
+    :param output_folder: If set, subspaces will be saved in this location
+    :return: List of recovered subspaces
+    """
     Y = np.load(sample_file)
     return recover_subspaces(Y, s, J, output_folder)
 
 
 def save_subspaces(output_folder, subspaces):
+    """
+    Saves subspaces to location output_folder.
+    :param output_folder: Subspaces will be saved in this location in .npy format
+    :param subspaces: List of subspaces (basis matrices) to save
+    """
     for (i,subspace) in enumerate(subspaces):
         filename = output_folder + '/subspace_' + str(i) +'.npy'
         np.save(filename, subspace)
