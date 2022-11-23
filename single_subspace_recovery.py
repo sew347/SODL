@@ -1,6 +1,6 @@
 import numpy as np
 
-def recover_subspace(i, s, Y, cov, corrs = None):
+def recover_subspace(i, s, Y, cov, corrs = None, return_cov = False):
     """
     Recovers i-th subspace from samples Y
     :param i: index of subspace to recover
@@ -20,6 +20,8 @@ def recover_subspace(i, s, Y, cov, corrs = None):
     M = np.shape(cwc_proj)[0]
     E = np.linalg.eigh(cwc_proj)
     # return E[1][:,-s:], E, corr_weight_cov, cwc_proj
+    if return_cov:
+        return E[1][:,-s:], E, corr_weight_cov, cwc_proj
     return E[1][:,-s:]
 
 

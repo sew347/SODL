@@ -22,14 +22,21 @@ def single_subspace_intersection(Si, Sj, tau=0.5):
     :param tau: singular value threshold for intersection
     :return: Vector of intersection and Boolean whether intersection was found
     """
+    # s = np.shape(P_itoj)[1]
     Pj = proj_mat(Sj)
     P_itoj = Si - Pj @ Si
     SVD = la.svd(P_itoj)
     sing_vals = SVD[1]
-    if (sing_vals[-1] < tau) and (sing_vals[-2] >= tau):
-        return (Si @ SVD[2][-1],True)
+    # print(sing_vals)
+    if (sing_vals[-1] < tau):
+        if (sing_vals[-2] >= tau):
+            return (Si @ SVD[2][-1],True)
+        else:
+            # print('Nontrivial intersection of dimension > 1')
+            return (0, False)
     else:
         return (0,False)
+
     
 
 def is_new(D_list, dhat, eta):

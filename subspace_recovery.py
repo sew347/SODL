@@ -4,13 +4,14 @@ import os
 import single_subspace_recovery as ssr
 
 
-def recover_subspaces(Y, s, J = None, output_folder = None):
+def recover_subspaces(Y, s, J=None, output_folder=None):
     """
     Recovers bases for the spanning subspaces from sample matrix Y.
     :param Y: Data matrix with samples as columns
     :param s: Expected sparsity
     :param J: Number of subspaces to recover. If not set, all will be recovered.
     :param output_folder: If set, subspaces will be saved in this location
+    :param verbose: If true, prints periodic output on progress
     :return: List of recovered subspaces
     """
     if J is None:
@@ -21,6 +22,8 @@ def recover_subspaces(Y, s, J = None, output_folder = None):
     subspaces = []
     for i in range(J):
         subspaces.append(ssr.recover_subspace(i, s, Y, cov, corrs = corrs[i,:]))
+        if np.mod(i+1, 50) == 0:
+            print(f'Computed {i+1} subspaces successfully.')
     if output_folder is not None:
         save_subspaces(output_folder, subspaces)
     return subspaces
