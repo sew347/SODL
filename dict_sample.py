@@ -47,10 +47,7 @@ class dict_sample:
             print('Test suite is running with noise.')
             self.Y = self.Y + np.random.normal(0,epsi*math.sqrt(s)/math.sqrt(M),(M,N))
         self.HSig_D = self.build_HSig_D()
-        if full_corr:
-            self.corr = np.abs(np.dot(np.transpose(self.Y),self.Y))
-        else:
-            self.corr = np.abs(np.dot(np.transpose(self.Y[:,:self.n_subspaces]),self.Y))
+        self.corr = np.abs(np.dot(np.transpose(self.Y[:,:self.n_subspaces]),self.Y))
 
     def build_D(self):
         D = np.random.normal(0,1,(self.M,self.K))

@@ -3,6 +3,7 @@ import numpy.linalg as la
 import argparse
 import pandas as pd
 import os
+import pdb
 
 
 def proj_mat(A):
@@ -22,21 +23,27 @@ def single_subspace_intersection(Si, Sj, tau=0.5):
     :param tau: singular value threshold for intersection
     :return: Vector of intersection and Boolean whether intersection was found
     """
-    # s = np.shape(P_itoj)[1]
     Pj = proj_mat(Sj)
     P_itoj = Si - Pj @ Si
     SVD = la.svd(P_itoj)
     sing_vals = SVD[1]
     # print(sing_vals)
-    if (sing_vals[-1] < tau):
-        if (sing_vals[-2] >= tau):
-            return (Si @ SVD[2][-1],True)
-        else:
-            # print('Nontrivial intersection of dimension > 1')
-            return (0, False)
+    dim = get_int_dim(sing_vals, tau)
+    if dim > 0:
+        intersection = Si @ SVD[2][-1] if dim == 1 else Si @ SVD[2][-dim:,:].T
+        return (intersection,dim)
     else:
-        return (0,False)
+        return (0,0)
 
+    
+def get_int_dim(sv_list, tau):
+    #check if sorted:
+    if not np.all(sv_list[:-1] >= sv_list[1:]):
+        raise ValueError('List of singular values is not sorted.')
+    for i in range(len(sv_list)):
+        if sv_list[i] < tau:
+            return(len(sv_list) - i)
+    return 0
     
 
 def is_new(D_list, dhat, eta):
@@ -49,46 +56,46 @@ def is_new(D_list, dhat, eta):
     """
     is_new = True
     for d in D_list:
+        # pdb.set_trace()
         if np.abs(np.inner(d,dhat)) > eta:
             is_new = False
             break
     return is_new
 
 
-def subspace_intersection(subspaces, tau=0.5, eta=0.5, J=None):
+def subspace_intersection(subspaces, D_list = [], start=0, rate=1, tau=0.5, eta=0.5):
     """
     Performs approximate subspace intersection on all pairs of subspaces Si, Sj up to J
     :param subspaces: list of bases of subspaces Si
     :param tau: singular value threshold for intersection
     :param eta: threshold for similarity
-    :param J: number of subspaces to scan
     :return: Dictionary, intersection metadata, success indicator
     """
-    D_list = []
     intersection_list = []
-    if not J:
-        J = len(subspaces)
-
+    end = len(subspaces)
+    
     s = np.shape(subspaces[0])[1]
-    s_remaining = [s]*J
+    s_remaining = [s]*end
         
-    for i in range(J):
-        print(i)
+    for i in range(start,end):
+        if i > 0 and np.mod(i,10) == 0:
+            print(f'Completed intersections for subspace {i}. Recovered {len(D_list)} dictionary elements so far.')
         Si = subspaces[i]
         if s_remaining[i] > 0:
-            for j in range(i+1,J):
+            for j in range(i+1,end,rate):
                 Sj = subspaces[j]
-                dhat, has_int = single_subspace_intersection(Si, Sj)
-                if has_int:
-                    intersection = [i,j,-1, tau, eta]
+                int_subspace, dim = single_subspace_intersection(Si, Sj)
+                if dim == 1:
+                    dhat = int_subspace
                     if is_new(D_list, dhat, eta):
-                        intersection[2] = len(D_list)
-                        intersection_list.append(intersection)
+                        int_data = [[i,j],len(D_list), tau, eta]
+                        intersection_list.append(int_data)
                         D_list.append(dhat)
                         s_remaining[i] -= 1
                         s_remaining[j] -= 1
-                        if s_remaining[i] > 0:
+                        if s_remaining[i] <= 0:
                             break
+                        
     if len(D_list) == 0:
         return False, False, False
     else:
@@ -96,15 +103,18 @@ def subspace_intersection(subspaces, tau=0.5, eta=0.5, J=None):
         D = np.zeros((M, len(D_list)))
         for (i,d) in enumerate(D_list):
             D[:,i] = d
-    intersection_data = pd.DataFrame(intersection_list, columns = ['idx1','idx2','col', 'tau', 'eta'])
+    intersection_data = pd.DataFrame(intersection_list, columns = ['indices','col', 'tau', 'eta'])
     return D, intersection_data, True
 
 
-def load_subspaces(subspace_folder, J=None):
+def load_subspaces(subspace_folder, end=None):
+    """
+    loads subspaces into list
+    """
     subspaces = []
-    if not J:
-        J = len(os.listdir(subspace_folder))
-    for i in range(J):
+    if not end:
+        end = len(os.listdir(subspace_folder))
+    for i in range(end):
         subspace_path = subspace_folder + '/subspace_' + str(i) +'.npy'
         if os.path.exists(subspace_path):
             curr_subspace = np.load(subspace_path, allow_pickle=True)
@@ -112,7 +122,7 @@ def load_subspaces(subspace_folder, J=None):
     return subspaces
     
 
-def subspace_intersection_from_files(subspace_folder, output_folder, tau=0.5, eta=0.5, J=None):
+def subspace_intersection_from_files(subspace_folder, D_list = [], rate=1, tau=0.5, eta=0.5, start=None, end=None):
     """
     Performs approximate subspace intersection on all pairs of subspaces Si, Sj up to J from given directory
     :param subspace_folder: Location of saved subspaces
@@ -122,8 +132,8 @@ def subspace_intersection_from_files(subspace_folder, output_folder, tau=0.5, et
     :param J: number of subspaces to scan
     :return: Dictionary, intersection metadata
     """
-    subspaces = load_subspaces(subspace_folder)
-    D, intersection_data, success = subspace_intersection(subspaces, tau=tau, eta=eta, J=J)
+    subspaces = load_subspaces(subspace_folder, end=end)
+    D, intersection_data, success = subspace_intersection(subspaces, D_list = D_list, start=start, rate=rate, tau=tau, eta=eta)
     if success:
         return D, intersection_data
     else:
@@ -137,7 +147,9 @@ if __name__ == "__main__":
     parser.add_argument('--subspace_folder', help='Location of input subspaces', required=True)
     parser.add_argument('--tau', type=float, help='Intersection threshold', required=False, default=0.5)
     parser.add_argument('--eta', type=float, help='Column similarity threshold', required=False, default=0.5)
-    parser.add_argument('--J', type=int, help='Number of subspaces to consider.', required=False)
+    parser.add_argument('--rate', type=int, help='Subsamples intersections at this rate', required=False, default=1)
+    parser.add_argument('--start', type=int, help='Number of subspaces to consider.', required=False, default = 0)
+    parser.add_argument('--end', type=int, help='Number of subspaces to consider.', required=False)
     parser.add_argument('--output_folder', help='Folder for saving output', required=True)
     args = parser.parse_args()
     
@@ -145,6 +157,25 @@ if __name__ == "__main__":
     if not os.path.exists(outpath):
        os.makedirs(outpath)
     
-    est_D, int_data = subspace_intersection_from_files(args.subspace_folder, args.output_folder, tau = args.tau, eta = args.eta, J = args.J)
+    if os.path.exists(outpath + '/est_D.npy'):
+        input_D = np.load(outpath + '/est_D.npy')
+        input_D_list = [input_D[:,i] for i in range(np.shape(input_D)[1])]
+    else:
+        input_D_list = []
+    
+    est_D, int_data = subspace_intersection_from_files(
+        args.subspace_folder,
+        D_list = input_D_list,
+        rate = args.rate,
+        tau = args.tau,
+        eta = args.eta,
+        start = args.start,
+        end = args.end
+    )
+    
+    if os.path.exists(outpath + '/intersection_data.csv'):
+        input_metadata = pd.read_csv(outpath+'/intersection_data.csv', index_col = 0)
+        int_data = pd.concat([input_metadata,int_data])
+    
     np.save(outpath + '/est_D.npy', est_D)
     int_data.to_csv(outpath + '/intersection_data.csv')

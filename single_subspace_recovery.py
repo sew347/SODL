@@ -25,6 +25,14 @@ def recover_subspace(i, s, Y, cov, corrs = None, return_cov = False):
     return E[1][:,-s:]
 
 
+def get_weighted_eigenvalues(i, Y):
+    N = np.shape(Y)[1]
+    cov = (Y @ Y.T)/N
+    s = 1
+    _, E, cwc, cwc_proj = recover_subspace(i, s, Y, cov, return_cov = True)
+    return E[0]
+
+
 def frobenius_complement(A, B):
     """
     Returns complement of orthogonal Frobenius projection of matrix A onto matrix B

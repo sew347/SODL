@@ -4,32 +4,28 @@ import os
 import single_subspace_recovery as ssr
 
 
-def recover_subspaces(Y, s, J=None, output_folder=None):
+def recover_subspaces(Y, s, output_folder, J=None):
     """
     Recovers bases for the spanning subspaces from sample matrix Y.
     :param Y: Data matrix with samples as columns
     :param s: Expected sparsity
+    :param output_folder: Subspaces will be saved in this location
     :param J: Number of subspaces to recover. If not set, all will be recovered.
-    :param output_folder: If set, subspaces will be saved in this location
-    :param verbose: If true, prints periodic output on progress
-    :return: List of recovered subspaces
+    :return: None
     """
     if J is None:
         J = np.shape(Y)[1]
     N = np.shape(Y)[1]
     cov = (Y @ Y.T)/N
     corrs = Y[:,:J].T @ Y
-    subspaces = []
     for i in range(J):
-        subspaces.append(ssr.recover_subspace(i, s, Y, cov, corrs = corrs[i,:]))
+        subspace_curr = ssr.recover_subspace(i, s, Y, cov, corrs = corrs[i,:])
+        filename = output_folder + '/subspace_' + str(i) +'.npy'
+        np.save(filename, subspace_curr)
         if np.mod(i+1, 50) == 0:
             print(f'Computed {i+1} subspaces successfully.')
-    if output_folder is not None:
-        save_subspaces(output_folder, subspaces)
-    return subspaces
 
-
-def recover_subspaces_from_file(sample_file, s, J = None, output_folder = None):
+def recover_subspaces_from_file(sample_file, s, output_folder, J = None):
     """
     Wrapper for recover_subspaces to be called from file for samples.
     :param sample_file: location of file in .npy format containing matrix with samples as columns
@@ -39,19 +35,8 @@ def recover_subspaces_from_file(sample_file, s, J = None, output_folder = None):
     :return: List of recovered subspaces
     """
     Y = np.load(sample_file)
-    return recover_subspaces(Y, s, J, output_folder)
+    return recover_subspaces(Y, s, output_folder, J = J)
 
-
-def save_subspaces(output_folder, subspaces):
-    """
-    Saves subspaces to location output_folder.
-    :param output_folder: Subspaces will be saved in this location in .npy format
-    :param subspaces: List of subspaces (basis matrices) to save
-    """
-    for (i,subspace) in enumerate(subspaces):
-        filename = output_folder + '/subspace_' + str(i) +'.npy'
-        np.save(filename, subspace)
-    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -70,7 +55,7 @@ if __name__ == "__main__":
     recover_subspaces_from_file(
         args.sample_file,
         args.s,
+        args.output_folder,
         J = args.J,
-        output_folder = args.output_folder
     )
 
