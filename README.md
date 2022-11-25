@@ -2,6 +2,7 @@
 Dictionary learning using spectral methods.
 
 ## Basic workflow (simulated data)
+Run the following commands from the directory Spectral_Subspace_DL to create a randomized dictionary and sample, recover subspaces, and recover the dictionary.
 
 ### Creating a simulated dictionary matrix and sample data (`dict_sample.py`):
 ```bash 
