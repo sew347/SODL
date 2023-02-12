@@ -1,6 +1,6 @@
 import numpy as np
 
-def recover_subspace(i, s, Y, cov, corrs = None, return_cov = False):
+def recover_subspace(i, s, Y, cov, corrs = None, return_cov = False, cov_proj = True):
     """
     Recovers i-th subspace from samples Y
     :param i: index of subspace to recover
@@ -11,12 +11,16 @@ def recover_subspace(i, s, Y, cov, corrs = None, return_cov = False):
     :return: Basis for recovered susbspace
     """
     if corrs is None:
-        corrs = np.abs(Y[:,i].T @ np.conjugate(Y))
-    mu = np.mean(corrs)
-    corr_weight_samples = (corrs/mu) * Y
+        corrs = Y[:,i].T @ np.conjugate(Y)
+    abs_corrs = np.abs(corrs)
+    mu = np.mean(abs_corrs)
+    corr_weight_samples = (abs_corrs/mu) * Y
     N = np.shape(Y)[1]
     corr_weight_cov = (corr_weight_samples @ np.conjugate(corr_weight_samples.T))/N
-    cwc_proj = frobenius_complement(corr_weight_cov, cov)
+    if cov_proj:
+        cwc_proj = frobenius_complement(corr_weight_cov, cov)
+    else:
+        cwc_proj = corr_weight_cov
     M = np.shape(cwc_proj)[0]
     E = np.linalg.eigh(cwc_proj)
     if return_cov:

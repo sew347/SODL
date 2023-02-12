@@ -80,7 +80,7 @@ class dict_sample:
         return Xcol
 
     def build_HSig_D(self):
-        HSig_D = np.dot(self.Y, np.transpose(self.Y))
+        HSig_D = np.dot(self.Y, np.conjugate(self.Y.T))
         return HSig_D/np.linalg.norm(HSig_D)
     
 
