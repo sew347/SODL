@@ -33,13 +33,14 @@ import numpy.linalg as la
 ######################################################
 
 class dict_sample:
-    def __init__(self, M, s, K, N, D = None, epsi = 0, fixed_supp = [], n_subspaces = -1):
+    def __init__(self, M, s, K, N, D = None, epsi = 0, fixed_supp = [], n_subspaces = -1, use_complex = False):
         self.M = M
         self.s = s
         self.K = K
         self.N = N
         self.fixed_supp = fixed_supp
         self.n_subspaces = self.N if n_subspaces == -1 else n_subspaces
+        self.use_complex = use_complex
         self.D = self.build_D()
         self.X = self.build_X()
         self.Y = self.build_Y()
@@ -51,6 +52,9 @@ class dict_sample:
 
     def build_D(self):
         D = np.random.normal(0,1,(self.M,self.K))
+        if self.use_complex:
+            D = D.astype(np.complex128)
+            D = D + np.random.normal(0,1,(self.M,self.K))*1j
         D = D/np.linalg.norm(D, axis = 0)
         return(D)
 
@@ -90,6 +94,7 @@ if __name__ == "__main__":
     parser.add_argument('--N', type=int, help='Number of samples', required = False)
     parser.add_argument('--seed', type=int, help='Random seed', required = False)
     parser.add_argument('--fixed_supp', type=int, nargs='+', help='fixed support', required=False, default = [])
+    parser.add_argument('--use_complex', help='If true, use complex numbers', required=False, action='store_true')
     parser.add_argument('--output_folder', help='Folder for saving output', required = True)
     args = parser.parse_args()
 
@@ -97,7 +102,7 @@ if __name__ == "__main__":
         np.random.seed(args.seed)
         random.seed(args.seed)
         
-    data = dict_sample(args.M,args.s,args.K,args.N, fixed_supp = args.fixed_supp)
+    data = dict_sample(args.M,args.s,args.K,args.N, fixed_supp = args.fixed_supp, use_complex = args.use_complex)
     X = data.X
     D = data.D
     Y = data.Y

@@ -39,5 +39,5 @@ def frobenius_complement(A, B):
     :param B: matrix
     :return: A - (<A,B>_F/||B||_f^2)B
     """
-    inner_prod = np.trace(A @ np.conjugate(B))
+    inner_prod = np.abs(np.trace(A @ np.conjugate(B)))
     return A - (inner_prod*B)/(np.linalg.norm(B,'fro')**2)
