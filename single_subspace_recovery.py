@@ -11,15 +11,14 @@ def recover_subspace(i, s, Y, cov, corrs = None, return_cov = False):
     :return: Basis for recovered susbspace
     """
     if corrs is None:
-        corrs = Y[:,i].T @ Y
-    mu = np.mean(np.abs(corrs))
+        corrs = np.abs(Y[:,i].T @ np.conjugate(Y))
+    mu = np.mean(corrs)
     corr_weight_samples = (corrs/mu) * Y
     N = np.shape(Y)[1]
-    corr_weight_cov = (corr_weight_samples @ corr_weight_samples.T)/N
+    corr_weight_cov = (corr_weight_samples @ np.conjugate(corr_weight_samples.T))/N
     cwc_proj = frobenius_complement(corr_weight_cov, cov)
     M = np.shape(cwc_proj)[0]
     E = np.linalg.eigh(cwc_proj)
-    # return E[1][:,-s:], E, corr_weight_cov, cwc_proj
     if return_cov:
         return E[1][:,-s:], E, corr_weight_cov, cwc_proj
     return E[1][:,-s:]
@@ -35,10 +34,10 @@ def get_weighted_eigenvalues(i, Y):
 
 def frobenius_complement(A, B):
     """
-    Returns complement of orthogonal Frobenius projection of matrix A onto matrix B
+    Returns complement of orthogonal Frobenius projection of (symmetric) matrix A onto (symmetric) matrix B
     :param A: matrix
     :param B: matrix
     :return: A - (<A,B>_F/||B||_f^2)B
     """
-    inner_prod = np.trace(A @ B)
+    inner_prod = np.trace(A @ np.conjugate(B))
     return A - (inner_prod*B)/(np.linalg.norm(B,'fro')**2)

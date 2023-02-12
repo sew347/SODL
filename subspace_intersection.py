@@ -10,10 +10,9 @@ def proj_mat(A):
     """
     Projection matrix for orthogonal basis matrix A
     :param A: Orthogonal matrix with unit vector columns
-    :return: AA^T, projection matrix onto subspace spanned by cols of A
+    :return: AA^*, projection matrix onto subspace spanned by cols of A
     """
-    #todo: check if A is orthogonal?
-    return np.dot(A, np.transpose(A))
+    return np.dot(A, np.conjugate(A.T))
 
 def single_subspace_intersection(Si, Sj, tau=0.5):
     """
@@ -27,7 +26,6 @@ def single_subspace_intersection(Si, Sj, tau=0.5):
     P_itoj = Si - Pj @ Si
     SVD = la.svd(P_itoj)
     sing_vals = SVD[1]
-    # print(sing_vals)
     dim = get_int_dim(sing_vals, tau)
     if dim > 0:
         intersection = Si @ SVD[2][-1] if dim == 1 else Si @ SVD[2][-dim:,:].T
@@ -57,7 +55,7 @@ def is_new(D_list, dhat, eta):
     is_new = True
     for d in D_list:
         # pdb.set_trace()
-        if np.abs(np.inner(d,dhat)) > eta:
+        if np.abs(np.inner(d,np.conjugate(dhat))) > eta:
             is_new = False
             break
     return is_new
@@ -78,8 +76,7 @@ def subspace_intersection(subspaces, D_list = [], start=0, rate=1, tau=0.5, eta=
     s_remaining = [s]*end
         
     for i in range(start,end):
-        if i > 0 and np.mod(i,10) == 0:
-            print(f'Completed intersections for subspace {i}. Recovered {len(D_list)} dictionary elements so far.')
+
         Si = subspaces[i]
         if s_remaining[i] > 0:
             for j in range(i+1,end,rate):
@@ -95,15 +92,22 @@ def subspace_intersection(subspaces, D_list = [], start=0, rate=1, tau=0.5, eta=
                         s_remaining[j] -= 1
                         if s_remaining[i] <= 0:
                             break
+                            
+        if i > 0 and np.mod(i+1,10) == 0:
+            print(f'Completed intersections for subspace {i+1}. Recovered {len(D_list)} dictionary elements so far.')
                         
     if len(D_list) == 0:
         return False, False, False
     else:
         M = np.shape(D_list[0])[0]
-        D = np.zeros((M, len(D_list)))
+        D = np.zeros((M, len(D_list))).astype(complex)
         for (i,d) in enumerate(D_list):
             D[:,i] = d
+        if np.linalg.norm(D - np.real(D)) < 1e-10:
+            print('Complex components of recovered dictionary below 1e-10 threshold; returning real part.')
+            D = np.real(D)
     intersection_data = pd.DataFrame(intersection_list, columns = ['indices','col', 'tau', 'eta'])
+    print(f'Run complete. Recovered {len(D_list)} dictionary elements.')
     return D, intersection_data, True
 
 
