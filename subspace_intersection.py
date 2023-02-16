@@ -69,6 +69,11 @@ def subspace_intersection(subspaces, D_list = [], start=0, rate=1, tau=0.5, eta=
     :param eta: threshold for similarity
     :return: Dictionary, intersection metadata, success indicator
     """
+    
+    if len(D_list) > 0:
+        if np.shape(D_list[0])[0] != np.shape(subspaces[0])[0]:
+            raise ValueError('Existing dictionary in folder with dimension M = %d incompatible with subspace dimension M = %d'%(np.shape(D_list[0])[0], np.shape(subspaces[0])[0]))
+    
     intersection_list = []
     end = len(subspaces)
     
