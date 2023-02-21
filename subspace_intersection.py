@@ -28,7 +28,7 @@ def single_subspace_intersection(Si, Sj, tau=0.5):
     sing_vals = SVD[1]
     dim = get_int_dim(sing_vals, tau)
     if dim > 0:
-        intersection = Si @ SVD[2][-1] if dim == 1 else Si @ SVD[2][-dim:,:].T
+        intersection = Si @ np.conjugate(SVD[2][-1]) if dim == 1 else Si @ np.conjugate(SVD[2][-dim:,:]).T
         return (intersection,dim)
     else:
         return (0,0)

@@ -26,6 +26,7 @@ def recover_subspace(i, s, Y, cov, corrs = None, return_cov = False, cov_proj = 
     if return_cov:
         return E[1][:,-s:], E, corr_weight_cov, cwc_proj
     return E[1][:,-s:]
+    # return E[1][:,-s-1:-1]
 
 
 def get_weighted_eigenvalues(i, Y):
