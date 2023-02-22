@@ -18,10 +18,9 @@ def recover_subspaces(Y, s, output_folder, start=0, J=None, cov_proj = True):
         J = np.shape(Y)[1]
     N = np.shape(Y)[1]
     cov = (Y @ np.conjugate(Y).T)/N
-    corrs = Y[:,:start+J].T @ np.conjugate(Y)
+    corrs = Y[:,start:start+J].T @ np.conjugate(Y)
     for i in range(start, start+J):
-        print(i)
-        subspace_curr = ssr.recover_subspace(i, s, Y, cov, corrs = corrs[i,:], cov_proj = cov_proj)
+        subspace_curr = ssr.recover_subspace(i, s, Y, cov, corrs = corrs[i-start,:], cov_proj = cov_proj)
         filename = output_folder + '/subspace_' + str(i) +'.npy'
         np.save(filename, subspace_curr)
         if np.mod(i+1, 50) == 0:
