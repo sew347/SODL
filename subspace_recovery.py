@@ -3,6 +3,7 @@ import argparse
 import os
 import single_subspace_recovery as ssr
 import scipy.io as sio
+import utils
 
 
 def recover_subspaces(Y, s, output_folder, start=0, J=None, cov_proj = True):
@@ -38,16 +39,17 @@ def recover_subspaces_from_file(sample_file, s, output_folder, start=0, J=None, 
     :param matlab_name: Variable name of matlab element to load as Y matrix. Defaults to 'Y'.
     :return: List of recovered subspaces
     """
-    file_ext = sample_file.split('.')[1]
-    if file_ext == 'npy':
-        Y = np.load(sample_file)
-    elif file_ext == 'mat':
-        mat_dict = sio.loadmat(sample_file)
-        if matlab_name not in mat_dict.keys():
-            raise ValueError('Provided matlab variable name ' + matlab_name + ' not present in file ' + sample_file + '. Confirm matlab_name parameter; default is Y.')
-        Y = mat_dict[matlab_name]
-    else:
-        raise ValueError('File extension for sample_file must be either .npy or .mat.')
+    # file_ext = sample_file.split('.')[1]
+    # if file_ext == 'npy':
+    #     Y = np.load(sample_file)
+    # elif file_ext == 'mat':
+    #     mat_dict = sio.loadmat(sample_file)
+    #     if matlab_name not in mat_dict.keys():
+    #         raise ValueError('Provided matlab variable name ' + matlab_name + ' not present in file ' + sample_file + '. Confirm matlab_name parameter; default is Y.')
+    #     Y = mat_dict[matlab_name]
+    # else:
+    #     raise ValueError('File extension for sample_file must be either .npy or .mat.')
+    Y = utils.load_sample_file(sample_file, matlab_name)
     return recover_subspaces(Y, s, output_folder, start=start, J = J, cov_proj = cov_proj)
 
 

@@ -4,6 +4,7 @@ import argparse
 import pandas as pd
 import os
 import pdb
+import utils
 
 
 def proj_mat(A):
@@ -114,21 +115,6 @@ def subspace_intersection(subspaces, D_list = [], start=0, rate=1, tau=0.5, eta=
     intersection_data = pd.DataFrame(intersection_list, columns = ['indices','col', 'tau', 'eta'])
     print(f'Run complete. Recovered {len(D_list)} dictionary elements.')
     return D, intersection_data, True
-
-
-def load_subspaces(subspace_folder, end=None):
-    """
-    loads subspaces into list
-    """
-    subspaces = []
-    if not end:
-        end = len(os.listdir(subspace_folder))
-    for i in range(end):
-        subspace_path = subspace_folder + '/subspace_' + str(i) +'.npy'
-        if os.path.exists(subspace_path):
-            curr_subspace = np.load(subspace_path, allow_pickle=True)
-            subspaces.append(curr_subspace)
-    return subspaces
     
 
 def subspace_intersection_from_files(subspace_folder, D_list = [], rate=1, tau=0.5, eta=0.5, start=None, end=None):
@@ -141,7 +127,7 @@ def subspace_intersection_from_files(subspace_folder, D_list = [], rate=1, tau=0
     :param J: number of subspaces to scan
     :return: Dictionary, intersection metadata
     """
-    subspaces = load_subspaces(subspace_folder, end=end)
+    subspaces = utils.load_subspaces(subspace_folder, end=end)
     D, intersection_data, success = subspace_intersection(subspaces, D_list = D_list, start=start, rate=rate, tau=tau, eta=eta)
     if success:
         return D, intersection_data
@@ -151,14 +137,14 @@ def subspace_intersection_from_files(subspace_folder, D_list = [], rate=1, tau=0
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="This script takes in a collection of sample vectors and returns a collection of estimated spanning subspaces.",
+        description="This script takes in a collection of estimated spanning subspaces and returns an estimated dictionary based on pairwise intersections.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--subspace_folder', help='Location of input subspaces', required=True)
     parser.add_argument('--tau', type=float, help='Intersection threshold', required=False, default=0.5)
     parser.add_argument('--eta', type=float, help='Column similarity threshold', required=False, default=0.5)
     parser.add_argument('--rate', type=int, help='Subsamples intersections at this rate', required=False, default=1)
-    parser.add_argument('--start', type=int, help='Number of subspaces to consider.', required=False, default = 0)
-    parser.add_argument('--end', type=int, help='Number of subspaces to consider.', required=False)
+    parser.add_argument('--start', type=int, help='Start index for intersections.', required=False, default = 0)
+    parser.add_argument('--end', type=int, help='End index for intersections.', required=False)
     parser.add_argument('--output_folder', help='Folder for saving output', required=True)
     args = parser.parse_args()
     

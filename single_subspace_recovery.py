@@ -41,7 +41,7 @@ def frobenius_complement(A, B):
     Returns complement of orthogonal Frobenius projection of (symmetric) matrix A onto (symmetric) matrix B
     :param A: matrix
     :param B: matrix
-    :return: A - (<A,B>_F/||B||_f^2)B
+    :return: A - (<A,B>_F/||B||_F^2)B
     """
     inner_prod = np.abs(np.trace(A @ np.conjugate(B)))
     return A - (inner_prod*B)/(np.linalg.norm(B,'fro')**2)
