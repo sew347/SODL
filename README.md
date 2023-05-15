@@ -1,4 +1,4 @@
-# Spectral_Subspace_DL
+# SODL (Spectral Oracle Dictionary Learning)
 Dictionary learning using spectral methods.
 
 ## Basic workflow (simulated data)
